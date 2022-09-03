@@ -46,14 +46,14 @@ pipeline {
   post {
     always{
       echo 'Pipeline for worker is complete...'
-      slackSend (channel: 'testing-jenkins-integration', message: 'Building... - ${env.JOB_NAME}')
+      slackSend (channel: 'testing-jenkins-integration', message: "Building... - ${env.JOB_NAME}")
     }
     failure{
       echo 'Something bad happened...'
       slackSend (channel: 'testing-jenkins-integration', message: 'Build Failed - ${env.JOB_NAME}')
     }
     success{
-      slackSend (channel: 'testing-jenkins-integration', message: 'Build Succeeded! - ${env.JOB_NAME}')
+      slackSend (channel: 'testing-jenkins-integration', message: "Build Succeeded! - ${env.JOB_NAME}")
     }
   }
 }
