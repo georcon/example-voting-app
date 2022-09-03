@@ -49,6 +49,7 @@ pipeline {
     }
     failure{
       echo 'Something bad happened...'
+      slackSend (channel: 'testing-jenkins-integration', 'message: Build Failed - ${env.JOB_NAME}')
     }
   }
 }
