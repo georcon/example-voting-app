@@ -1,0 +1,46 @@
+pipeline {
+  agent {
+    docker {
+      image 'python:2.7.16-slim'
+    }
+  }
+
+  stages {
+    stage('build'){
+      when {
+        changeset "**/vote/**"
+      }
+      steps{
+        echo 'Compiling vote app'
+        dir('vote'){
+          sh 'pip install -r requirements.txt'
+        }
+      }
+    }
+    stage('test'){
+      when {
+        changeset "**/vote/**"
+      }
+      steps{
+        echo 'Running Unit Tests on vote app'
+        dir('vote'){
+          sh 'nosetests -v'
+        }
+      }
+    }
+    
+  }
+  post {
+    always{
+      echo 'Pipeline for worker is complete...'
+      slackSend (channel: 'testing-jenkins-integration', message: "Building... - ${env.JOB_NAME}")
+    }
+    failure{
+      echo 'Something bad happened...'
+      slackSend (channel: 'testing-jenkins-integration', message: 'Build Failed - ${env.JOB_NAME}')
+    }
+    success{
+      slackSend (channel: 'testing-jenkins-integration', message: "Build Succeeded! - ${env.JOB_NAME}")
+    }
+  }
+}
