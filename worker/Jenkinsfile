@@ -63,8 +63,8 @@ pipeline {
       steps{
         echo 'Packaging worker app with docker'
         script {
-          docker.withRegistry('localhost:5100/') {
-            def workerImage = docker.build("localhost:5100/georcon/worker:v${env.BUILD_ID}", "./worker")
+          docker.withRegistry('http://localhost:5100/') {
+            def workerImage = docker.build("georcon/worker:v${env.BUILD_ID}", "./worker")
             workerImage.push()
             workerImage.push("${env.BRANCH_NAME}")
           }
