@@ -42,6 +42,22 @@ pipeline {
         }
       }
     }
+    stage('docker-package'){
+      when {
+        branch 'master'
+        changeset "**/worker/**"
+      }
+      steps{
+        echo 'Packaging worker app with docker'
+        script {
+          docker.withRegistry('localhost:5100') {
+            def workerImage = docker.build("georcon/worker:v${env.BUILD_ID}", "./worker")
+            workerImage.push()
+            workerImage.push("${env.BRANCH_NAME}")
+          }
+        }
+      }
+    }
   }
   post {
     always{
