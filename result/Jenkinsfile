@@ -1,12 +1,13 @@
 pipeline {
-  agent {
-    docker {
-      image 'node:8.16.0-alpine'
-    }
-  }
+  agent none
 
   stages {
     stage('build'){
+      agent  {
+        docker {
+          image 'node:8.16.0-alpine'
+        }
+      }
       when {
         changeset "**/result/**"
       }
@@ -18,6 +19,11 @@ pipeline {
       }
     }
     stage('test'){
+      agent  {
+        docker {
+          image 'node:8.16.0-alpine'
+        }
+      }
       when {
         changeset "**/result/**"
       }
@@ -25,6 +31,23 @@ pipeline {
         echo 'Running Unit Tests on result app'
         dir('result'){
           sh 'npm test'
+        }
+      }
+    }
+
+    stage('docker-package'){
+      agent any
+      when{
+        changeset "**/result/**"
+      }
+      steps{
+        echo 'Packaging result app with docker'
+        script{
+          docker.withRegistry('https://docker.home.georcon.com', 'docker.home.georcon.com-secret') {
+            def resultImage = docker.build("georcon/result:v${env.BUILD_ID})", "./result")
+            resultImage.push()
+            resultImage.push("${env.BRANCH_NAME}")
+          }
         }
       }
     }
