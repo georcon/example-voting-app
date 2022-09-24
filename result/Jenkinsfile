@@ -43,10 +43,11 @@ pipeline {
       steps{
         echo 'Packaging result app with docker'
         script{
-          docker.withRegistry('https://docker.home.georcon.com', 'docker.home.georcon.com-secret') {
-            def resultImage = docker.build("georcon/result:v${env.BUILD_ID})", "./result")
-            resultImage.push()
-            resultImage.push("${env.BRANCH_NAME}")
+          docker.withRegistry('https://docker.home.georcon.com/', 'docker.home.georcon.com-secret') {
+            def workerImage = docker.build("georcon/worker:v${env.BUILD_ID}", "./worker")
+            workerImage.push()
+            workerImage.push("${env.BRANCH_NAME}")
+          }
           }
         }
       }
