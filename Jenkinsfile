@@ -1,66 +1,74 @@
 pipeline {
   agent none
-
   stages {
-    stage('worker build'){
+    stage('worker build') {
       agent {
         docker {
           image 'maven:3.6.1-jdk-8-alpine'
           args '-v $HOME/.m2/root/.m2'
-          }
+        }
+
       }
       when {
-        changeset "**/worker/**"
+        changeset '**/worker/**'
       }
-      steps{
+      steps {
         echo 'Compiling worker app'
-        dir('worker'){
+        dir(path: 'worker') {
           sh 'mvn compile'
         }
+
       }
     }
-    stage('worker test'){
+
+    stage('worker test') {
       agent {
         docker {
           image 'maven:3.6.1-jdk-8-alpine'
           args '-v $HOME/.m2/root/.m2'
-          }
+        }
+
       }
       when {
-        changeset "**/worker/**"
+        changeset '**/worker/**'
       }
-      steps{
+      steps {
         echo 'Running Unit Tests on worker app'
-        dir('worker'){
+        dir(path: 'worker') {
           sh 'mvn clean test'
         }
+
       }
     }
-    stage('worker package'){
+
+    stage('worker package') {
       agent {
         docker {
           image 'maven:3.6.1-jdk-8-alpine'
           args '-v $HOME/.m2/root/.m2'
-          }
+        }
+
       }
       when {
         branch 'master'
-        changeset "**/worker/**"
+        changeset '**/worker/**'
       }
-      steps{
+      steps {
         echo 'Running Packaging on worker app'
-        dir('worker'){
+        dir(path: 'worker') {
           sh 'mvn package -DskipTests'
-          archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+          archiveArtifacts(artifacts: '**/target/*.jar', fingerprint: true)
         }
+
       }
     }
-    stage('worker docker-package'){
+
+    stage('worker docker-package') {
       agent any
       when {
-        changeset "**/worker/**"
+        changeset '**/worker/**'
       }
-      steps{
+      steps {
         echo 'Packaging worker app with docker'
         script {
           docker.withRegistry('https://docker.home.georcon.com/', 'docker.home.georcon.com-secret') {
@@ -69,102 +77,114 @@ pipeline {
             workerImage.push("${env.BRANCH_NAME}")
           }
         }
+
       }
     }
 
-      stage('result build'){
-      agent  {
+    stage('result build') {
+      agent {
         docker {
           image 'node:8.16.0-alpine'
         }
+
       }
       when {
-        changeset "**/result/**"
+        changeset '**/result/**'
       }
-      steps{
+      steps {
         echo 'Compiling result app'
-        dir('result'){
+        dir(path: 'result') {
           sh 'npm install'
         }
+
       }
     }
-    stage('result test'){
-      agent  {
+
+    stage('result test') {
+      agent {
         docker {
           image 'node:8.16.0-alpine'
         }
+
       }
       when {
-        changeset "**/result/**"
+        changeset '**/result/**'
       }
-      steps{
+      steps {
         echo 'Running Unit Tests on result app'
-        dir('result'){
+        dir(path: 'result') {
           sh 'npm install'
           sh 'npm test'
         }
+
       }
     }
 
-    stage('result docker-package'){
+    stage('result docker-package') {
       agent any
-      when{
-        changeset "**/result/**"
+      when {
+        changeset '**/result/**'
       }
-      steps{
+      steps {
         echo 'Packaging result app with docker'
-        script{
+        script {
           docker.withRegistry('https://docker.home.georcon.com/', 'docker.home.georcon.com-secret') {
             def workerImage = docker.build("georcon/result:v${env.BUILD_ID}", "./result")
             workerImage.push()
             workerImage.push("${env.BRANCH_NAME}")
           }
         }
+
       }
     }
 
-     stage('vote build'){
+    stage('vote build') {
       agent {
         docker {
           image 'python:2.7.16-slim'
           args '--user root'
         }
+
       }
       when {
-        changeset "**/vote/**"
+        changeset '**/vote/**'
       }
-      steps{
+      steps {
         echo 'Compiling vote app'
-        dir('vote'){
+        dir(path: 'vote') {
           sh 'pip install -r requirements.txt'
         }
+
       }
     }
-    stage('vote test'){
+
+    stage('vote test') {
       agent {
         docker {
           image 'python:2.7.16-slim'
           args '--user root'
         }
+
       }
       when {
-        changeset "**/vote/**"
+        changeset '**/vote/**'
       }
-      steps{
+      steps {
         echo 'Running Unit Tests on vote app'
-        dir('vote'){
+        dir(path: 'vote') {
           sh 'pip install -r requirements.txt'
           sh 'nosetests -v'
         }
+
       }
     }
 
-     stage('vote docker-package'){
+    stage('vote docker-package') {
       agent any
       when {
-        changeset "**/vote/**"
+        changeset '**/vote/**'
       }
-      steps{
+      steps {
         echo 'Packaging vote app with docker'
         script {
           docker.withRegistry('https://docker.home.georcon.com', 'docker.home.georcon.com-secret') {
@@ -173,20 +193,31 @@ pipeline {
             voteImage.push("${env.BRANCH_NAME}")
           }
         }
+
       }
     }
+
+    stage('Deploy to dev') {
+      steps {
+        sh 'docker compose up -d'
+      }
+    }
+
   }
   post {
-    always{
+    always {
       echo 'Pipeline for worker is complete...'
-      slackSend (channel: 'testing-jenkins-integration', message: "Building... - ${env.JOB_NAME}")
+      slackSend(channel: 'testing-jenkins-integration', message: "Building... - ${env.JOB_NAME}")
     }
-    failure{
+
+    failure {
       echo 'Something bad happened...'
-      slackSend (channel: 'testing-jenkins-integration', message: 'Build Failed - ${env.JOB_NAME}')
+      slackSend(channel: 'testing-jenkins-integration', message: 'Build Failed - ${env.JOB_NAME}')
     }
-    success{
-      slackSend (channel: 'testing-jenkins-integration', message: "Build Succeeded! - ${env.JOB_NAME}")
+
+    success {
+      slackSend(channel: 'testing-jenkins-integration', message: "Build Succeeded! - ${env.JOB_NAME}")
     }
+
   }
 }
