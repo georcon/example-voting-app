@@ -1,0 +1,41 @@
+version: "3.7"
+
+volumes:
+  db-data:
+
+networks:
+  instavote:
+
+services:
+  vote:
+    image: docker.home.georcon.com/georcon/vote:master
+    ports:
+      - 20000:80
+    depends_on:
+      - redis
+    networks:
+      - instavote
+
+  result:
+    image: docker.home.georcon.com/georcon/result:master
+    ports:
+      - 20001:4000
+    networks:
+      - instavote
+
+  worker:
+    image: docker.home.georcon.com/georcon/worker:master
+    networks:
+      - instavote
+      
+  redis:
+    image: redis:alpine
+    networks:
+      - instavote
+
+  db:
+    image: postgres:9.4
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - instavote
